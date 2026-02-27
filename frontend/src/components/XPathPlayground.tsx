@@ -32,48 +32,45 @@ const { TextArea } = Input;
 
 interface XPathPlaygroundProps {
   deviceSerial: string | null;
+  platform?: 'android' | 'ios';
   onResultsUpdate: (bounds: BoundsComputed[]) => void;
 }
 
+const ANDROID_EXAMPLES = [
+  { label: 'All clickable',        xpath: '//*[@clickable="true"]' },
+  { label: 'With text',            xpath: '//*[@text!=""]' },
+  { label: 'Button',               xpath: '//android.widget.Button' },
+  { label: 'TextView',             xpath: '//android.widget.TextView' },
+  { label: 'By resource-id',       xpath: '//*[@resource-id="com.example:id/button"]' },
+  { label: 'By content-desc',      xpath: '//*[@content-desc="Search"]' },
+  { label: 'Scrollable',           xpath: '//*[@scrollable="true"]' },
+  { label: 'EditText',             xpath: '//android.widget.EditText' },
+];
+
+const IOS_EXAMPLES = [
+  { label: 'All clickable',        xpath: '//*[@clickable="true"]' },
+  { label: 'By name',              xpath: '//*[@name="Login"]' },
+  { label: 'By label',             xpath: '//*[@label="Submit"]' },
+  { label: 'By value',             xpath: '//*[@value!=""]' },
+  { label: 'Button',               xpath: '//XCUIElementTypeButton' },
+  { label: 'StaticText',           xpath: '//XCUIElementTypeStaticText' },
+  { label: 'TextField',            xpath: '//XCUIElementTypeTextField' },
+  { label: 'Cell',                 xpath: '//XCUIElementTypeCell' },
+  { label: 'Scrollable',          xpath: '//*[@scrollable="true"]' },
+  { label: 'Name contains',        xpath: '//*[contains(@name,"cart")]' },
+];
+
 const XPathPlayground: React.FC<XPathPlaygroundProps> = ({
   deviceSerial,
+  platform = 'android',
   onResultsUpdate,
 }) => {
   const [xpathQuery, setXpathQuery] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<XPathQueryResponse | null>(null);
 
-  // Predefined XPath examples
-  const examples = [
-    {
-      label: 'All clickable elements',
-      xpath: '//*[@clickable="true"]',
-    },
-    {
-      label: 'Elements with text',
-      xpath: '//*[@text!=""]',
-    },
-    {
-      label: 'Buttons',
-      xpath: '//android.widget.Button',
-    },
-    {
-      label: 'TextViews',
-      xpath: '//android.widget.TextView',
-    },
-    {
-      label: 'Elements by resource-id',
-      xpath: '//*[@resource-id="com.example:id/button"]',
-    },
-    {
-      label: 'Elements by content-desc',
-      xpath: '//*[@content-desc="Search"]',
-    },
-    {
-      label: 'Scrollable containers',
-      xpath: '//*[@scrollable="true"]',
-    },
-  ];
+  const isIOS = platform === 'ios';
+  const examples = isIOS ? IOS_EXAMPLES : ANDROID_EXAMPLES;
 
   // Execute XPath query
   const executeQuery = async () => {
@@ -242,25 +239,30 @@ const XPathPlayground: React.FC<XPathPlaygroundProps> = ({
                             </Text>
                           </Space>
                           
-                          {/* ✅ 修复：从 attributes 中获取 */}
-                          {match.attributes?.text && (
-                            <Text>
-                              <Text type="secondary">Text:</Text> "{match.attributes.text}"
-                            </Text>
-                          )}
-                          
-                          {match.attributes?.['resource-id'] && (
-                            <Text>
-                              <Text type="secondary">ID:</Text>{' '}
-                              {match.attributes['resource-id']}
-                            </Text>
-                          )}
-                          
-                          {match.attributes?.['content-desc'] && (
-                            <Text>
-                              <Text type="secondary">Desc:</Text>{' '}
-                              {match.attributes['content-desc']}
-                            </Text>
+                          {isIOS ? (
+                            <>
+                              {match.attributes?.name && (
+                                <Text><Text type="secondary">name:</Text> "{match.attributes.name}"</Text>
+                              )}
+                              {match.attributes?.label && match.attributes.label !== match.attributes.name && (
+                                <Text><Text type="secondary">label:</Text> "{match.attributes.label}"</Text>
+                              )}
+                              {match.attributes?.value && (
+                                <Text><Text type="secondary">value:</Text> "{match.attributes.value}"</Text>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              {match.attributes?.text && (
+                                <Text><Text type="secondary">text:</Text> "{match.attributes.text}"</Text>
+                              )}
+                              {match.attributes?.['resource-id'] && (
+                                <Text><Text type="secondary">id:</Text> {match.attributes['resource-id']}</Text>
+                              )}
+                              {match.attributes?.['content-desc'] && (
+                                <Text><Text type="secondary">desc:</Text> "{match.attributes['content-desc']}"</Text>
+                              )}
+                            </>
                           )}
                           
                           {/* ✅ 添加安全检查 */}
@@ -294,17 +296,25 @@ const XPathPlayground: React.FC<XPathPlaygroundProps> = ({
 
         {/* XPath Syntax Help */}
         <div>
-          <Text strong>XPath Syntax Tips:</Text>
+          <Text strong>XPath Syntax Tips ({isIOS ? 'iOS' : 'Android'}):</Text>
           <Paragraph style={{ fontSize: 12, marginTop: 8, marginBottom: 0 }}>
-            • <Text code>//*[@attribute="value"]</Text> - Match by attribute
-            <br />
-            • <Text code>//ClassName</Text> - Match by class name
-            <br />
-            • <Text code>//*[contains(@text, "keyword")]</Text> - Partial text match
-            <br />
-            • <Text code>//*[@clickable="true" and @enabled="true"]</Text> - Multiple conditions
-            <br />
-            • <Text code>//node/child::*</Text> - Select children
+            {isIOS ? (
+              <>
+                • <Text code>//*[@name="Login"]</Text> - Match by name<br />
+                • <Text code>//*[@label="Submit"]</Text> - Match by label<br />
+                • <Text code>//XCUIElementTypeButton</Text> - Match by element type<br />
+                • <Text code>//*[contains(@name,"cart")]</Text> - Partial name match<br />
+                • <Text code>//XCUIElementTypeCell[.//XCUIElementTypeImage[@name="x"]]</Text> - Descendant predicate
+              </>
+            ) : (
+              <>
+                • <Text code>//*[@attribute="value"]</Text> - Match by attribute<br />
+                • <Text code>//android.widget.Button</Text> - Match by class name<br />
+                • <Text code>//*[contains(@text, "keyword")]</Text> - Partial text match<br />
+                • <Text code>//*[@clickable="true" and @enabled="true"]</Text> - Multiple conditions<br />
+                • <Text code>//node/child::*</Text> - Select children
+              </>
+            )}
           </Paragraph>
         </div>
       </Space>

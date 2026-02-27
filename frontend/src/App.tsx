@@ -288,6 +288,7 @@ const App: React.FC = () => {
             />
             <XPathPlayground
               deviceSerial={selectedDevice}
+              platform={platform as 'android' | 'ios'}
               onResultsUpdate={handleXPathResults}
             />
           </Col>
