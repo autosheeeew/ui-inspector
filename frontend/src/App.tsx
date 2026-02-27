@@ -157,9 +157,25 @@ const App: React.FC = () => {
     }
   };
 
-  // Handle element select
-  const handleElementSelect = (element: SelectedElement) => {
+  // Handle element select — fetch selectors on-demand if they are empty (lazy generation)
+  const handleElementSelect = async (element: SelectedElement) => {
+    // Optimistically show the element immediately (attributes are always present)
     setSelectedElement(element);
+
+    if (!selectedDevice) return;
+
+    // If selectors are already populated, nothing to do
+    if (element.selectors && Object.keys(element.selectors).length > 0) return;
+
+    try {
+      const result = await elementAPI.getElementInfo(selectedDevice, element.node_path);
+      if (result.success && result.element) {
+        setSelectedElement(result.element);
+      }
+    } catch (e) {
+      // Selector fetch failure is non-fatal; element attributes are already shown
+      console.warn('[handleElementSelect] Failed to fetch selectors:', e);
+    }
   };
 
   // Handle XPath results

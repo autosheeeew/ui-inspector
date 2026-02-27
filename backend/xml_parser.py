@@ -690,10 +690,10 @@ class XMLParser:
                 
                 # 当前节点路径
                 current_path = parent_path + [index]
-                
-                # ✅ 调用现有的 _generate_selectors 方法
-                selectors = XMLParser._generate_selectors(element, xml_root, platform)
-                
+
+                # Selectors are generated lazily (on element selection), not upfront.
+                selectors = {}
+
                 # 解析子节点
                 children = []
                 for child_index, child_element in enumerate(element):
@@ -860,6 +860,25 @@ class XMLParser:
 
 
     
+    @staticmethod
+    @staticmethod
+    def find_lxml_element_by_path(xml_root, node_path: List[int]):
+        """
+        Navigate to an lxml element using the same index path stored in node_path.
+        node_path[0] is always 0 (root itself); node_path[1:] are child indices.
+        Returns the lxml element, or None if the path is invalid.
+        """
+        try:
+            current = xml_root
+            for idx in node_path[1:]:
+                children = list(current)
+                if idx >= len(children):
+                    return None
+                current = children[idx]
+            return current
+        except Exception:
+            return None
+
     @staticmethod
     def find_node_by_path(hierarchy: Dict, node_path: List[int]) -> Optional[Dict]:
         """

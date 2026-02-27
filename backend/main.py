@@ -295,18 +295,32 @@ async def get_element_info(request: ElementInfoRequest):
         if not result['success']:
             raise HTTPException(status_code=500, detail="Failed to parse hierarchy")
         
-        # Find node by path
+        # Find node by path (dict)
         node = XMLParser.find_node_by_path(result['hierarchy'], request.node_path)
-        
+
         if not node:
             raise HTTPException(status_code=404, detail="Element not found")
-        
+
+        # Generate selectors on-demand from the cached raw XML
+        selectors = node.get('selectors') or {}
+        if not selectors:
+            cached_xml = cached.get("xml") if cached else None
+            if cached_xml:
+                try:
+                    from lxml import etree as _etree
+                    xml_root = _etree.fromstring(cached_xml.encode('utf-8'))
+                    lxml_elem = XMLParser.find_lxml_element_by_path(xml_root, request.node_path)
+                    if lxml_elem is not None:
+                        selectors = XMLParser._generate_selectors(lxml_elem, xml_root, platform)
+                except Exception as _e:
+                    logger.warning(f"[element/info] Selector generation failed: {_e}")
+
         return {
             "success": True,
             "element": {
                 "tag": node['tag'],
                 "attributes": node['attributes'],
-                "selectors": node['selectors'],
+                "selectors": selectors,
                 "node_path": node['node_path']
             }
         }
@@ -401,13 +415,28 @@ async def find_element_by_coordinate(request: FindByCoordinateRequest):
             logger.info(f"Found non-clickable element at depth {all_matches[0][1]}")
         
         logger.info(f"Element: {found_node['tag']}, Total matches: {len(all_matches)}")
-        
+
+        # Generate selectors on-demand for the found element
+        selectors = found_node.get('selectors') or {}
+        if not selectors:
+            cached_entry = _hierarchy_cache.get(request.serial)
+            cached_xml = cached_entry.get("xml") if cached_entry else None
+            if cached_xml:
+                try:
+                    from lxml import etree as _etree
+                    xml_root = _etree.fromstring(cached_xml.encode('utf-8'))
+                    lxml_elem = XMLParser.find_lxml_element_by_path(xml_root, found_node['node_path'])
+                    if lxml_elem is not None:
+                        selectors = XMLParser._generate_selectors(lxml_elem, xml_root, platform)
+                except Exception as _e:
+                    logger.warning(f"[find-by-coordinate] Selector generation failed: {_e}")
+
         return {
             "success": True,
             "element": {
                 "tag": found_node['tag'],
                 "attributes": found_node['attributes'],
-                "selectors": found_node['selectors'],
+                "selectors": selectors,
                 "node_path": found_node['node_path']
             },
             "total_matches": len(all_matches),
