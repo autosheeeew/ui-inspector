@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "android-ui-inspector"
+version = "2.0.0"
+description = "Android & iOS UI Inspector - Real-time screen streaming, hierarchy dump, and selector generation"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+authors = [{name = "Android UI Inspector"}]
+keywords = ["android", "ios", "ui", "inspector", "uiautomator", "appium"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+
+dependencies = [
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "pydantic>=2.5.0",
+    "websockets>=12.0",
+    "adbutils>=1.2.1",
+    "uiautomator2>=2.16.17,<2.18",
+    "apkutils2>=1.0.0",
+    "pymobiledevice3>=2.0.0",
+    "lxml>=5.1.0",
+    "python-multipart>=0.0.6",
+    "pillow>=12.0.0",  # 12.x 有 Python 3.14 预编译 wheel，避免从源码编译
+    "requests>=2.31.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "httpx",
+]
+
+[project.scripts]
+android-ui-inspector = "android_ui_inspector.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["backend*", "android_ui_inspector*"]
+
+[tool.setuptools.package-dir]
+"" = "."
+
+[tool.setuptools.package-data]
+"*" = ["frontend/dist/**", "frontend/dist/**/*"]
